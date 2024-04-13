@@ -14,7 +14,10 @@ Encoders encoders;
 //Variables
 int optionSelect = -1;
 int nOptions = 4;
-int left, right = 000;
+int temp, vel, dis = 0;
+bool flag = false;
+
+enum Function {encForward, encBackward, encClockWise, encAntiClockWise};
 
 //Funciones 
 
@@ -55,6 +58,116 @@ void buttonPress(){
   }
 }
 
+//Seleccionar un valor de 0-400 y asignarlo a temp, regresa true al presionar B 
+bool setVal(){
+  if(buttonA.isPressed()){
+        if(temp < 400)
+        temp = temp + 20;
+        display.gotoXY(4, 1);
+        display.print(String(temp)+" ");
+        buttonA.waitForRelease();
+        return false;
+      }else if(buttonC.isPressed()){
+        if(temp > 0)
+        temp = temp - 20;
+        display.gotoXY(4, 1);
+        display.print(String(temp)+" ");
+        buttonC.waitForRelease();
+        return false;
+      }else if(buttonB.isPressed()){
+        //motors.setSpeeds(0,0);
+        buttonB.waitForRelease();
+        return true;
+      }
+}
+
+void countDown(){
+  display.clear();
+  display.gotoXY(5, 1);
+  display.print("3");
+  delay(1000);
+  display.gotoXY(5, 1);
+  display.print("2");
+  delay(1000);
+  display.gotoXY(5, 1);
+  display.print("1");
+  delay(1000);
+}
+
+//Inicia los motores dependiendo de function, a la velocidad y distancia en los parametros
+void encoderTrack(Function function, int distance, int velocity){
+  //Encoder Variables
+  float pos_left = 0;
+  float pos_right = 0;
+  float pos_avg = 0;
+  float vel_left = 0;
+  float vel_right = 0;
+  float vel_avg = 0;
+  float period = 0.05; //periodo de muestreo
+  double prev_time = 0;
+  
+  //Selecionar funcion
+  switch(function){
+    case encForward:
+      motors.setSpeeds(velocity, velocity);
+      break;
+    case encBackward:
+      motors.setSpeeds(-1*velocity, -1*velocity);
+      break;
+    case encClockWise:
+      motors.setSpeeds(velocity, -1*velocity);
+      break;
+    case encAntiClockWise:
+      motors.setSpeeds(-1*velocity, velocity);
+      break;
+    default:
+      break;
+  }
+
+  while(1){
+    if(millis()-prev_time >= period*1000){
+    //Actualizamos el tiempo anterior del ciclo
+    prev_time = millis();
+
+    //Ejecutamos nuestra rutina cada 50ms
+    pos_left = float(encoders.getCountsAndResetLeft());
+    pos_left = pos_left * (1.0/12.0); // pulsos encoder a revMotor
+    pos_left = pos_left * (1.0/29.86); //revMotor a revRueda
+    pos_left = pos_left * ((3.2*3.1416)/1.0); //revRueda a cm
+
+    vel_left = pos_left / period;
+    vel_left = abs(vel_left);
+    pos_left = abs(pos_left);
+
+    pos_right = float(encoders.getCountsAndResetRight());
+    pos_right = pos_right * (1.0/12.0); // pulsos encoder a revMotor
+    pos_right = pos_right * (1.0/29.86); //revMotor a revRueda
+    pos_right = pos_right * ((3.2*3.1416)/1.0); //revRueda a cm
+
+    vel_right = pos_right / period;
+    vel_right = abs(vel_right);
+    pos_right = abs(pos_right);
+
+    //Calcular promedio velocidad dos llantas
+    vel_avg = (vel_right+vel_left)/2.0;
+    //Calcular promedio posición dos llantas
+    pos_avg = pos_avg+((pos_left+pos_right)/2.0);
+    
+    }
+    
+    display.gotoXY(5,2);
+    display.print(vel_avg);
+    display.gotoXY(4,3);
+    display.print(pos_avg);
+
+    if(pos_avg >= distance || buttonB.isPressed()){
+      motors.setSpeeds(0,0);
+      buttonB.waitForRelease();
+      break;
+    }
+  }
+}
+
 //Display al prender robot
 void mainMenu(){
   display.clear();
@@ -64,6 +177,37 @@ void mainMenu(){
   display.print("     B*    ");
   buttonB.waitForButton();
   optionSelect++;
+}
+
+//Display seleccionar distancia
+void menuDistance(){
+  flag = false;
+  display.clear();
+  display.gotoXY(1,0);
+  display.print("DISTANCE");
+  display.gotoXY(0,2);
+  display.print(" +       - ");
+  display.gotoXY(0,3);
+  display.print(" A       C ");
+  while(flag == false){
+    flag = setVal();
+  }
+  
+}
+
+//Display seleccionar velocidad
+void menuVelocity(){
+  flag = false;
+  display.clear();
+  display.gotoXY(1,0);
+  display.print("VELOCITY");
+  display.gotoXY(0,2);
+  display.print(" +       - ");
+  display.gotoXY(0,3);
+  display.print(" A       C ");
+  while(flag == false){
+    flag = setVal();
+  }
 }
 
 //Menu 1 (FORWARD)
@@ -112,129 +256,164 @@ void menu4(){
 
 //Avanzar
 void forward(){
-  right = 000;
-  display.clear();
-  display.gotoXY(0,2);
-  display.print(" +       - ");
-  display.gotoXY(0,3);
-  display.print(" A       C ");
+  flag = false;
+  temp = 0;
+  dis = 0;
+  vel = 0;
+  menuDistance();
   while(1){
-    display.gotoXY(4,0);
-    display.print(right);
-    motors.setSpeeds(right, right);
-    if(buttonA.isPressed()){
-        if(right < 400)
-        right = right + 20;
-        buttonA.waitForRelease();
-      }else if(buttonC.isPressed()){
-        if(right > 0)
-        right = right - 20;
-        buttonC.waitForRelease();
-      }else if(buttonB.isPressed()){
-        motors.setSpeeds(0,0);
-        break;
-      }
-
+    flag = setVal();
+    if(flag == true)
+      flag = false;
+      break;
   }
-  buttonB.waitForRelease();
+  dis = temp;
+  temp = 0;
+  menuVelocity();
+  while(1){
+    flag = setVal();
+    if(flag == true)
+      flag = false;
+      break;
+  }
+  vel = temp;
+  countDown();
+
+  display.clear();
+  display.gotoXY(1,0);
+  display.print(" FORWARD ");
+  display.gotoXY(0,2);
+  display.print("Vel: ");
+  display.gotoXY(0, 3);
+  display.print("Cm: ");
+  
+  Function function = encForward;  
+  encoderTrack(encForward, dis, vel);
+  delay(1000);
+  
 }
 
 //Retroceder
 void backward(){
-  right = 000;
-  int negRight;
-  display.clear();
-  display.gotoXY(0,2);
-  display.print(" +       - ");
-  display.gotoXY(0,3);
-  display.print(" A       C ");
+  flag = false;
+  temp = 0;
+  dis = 0;
+  vel = 0;
+  menuDistance();
   while(1){
-    display.gotoXY(4,0);
-    display.print(right);
-    negRight = (right)*(-1);
-    motors.setSpeeds(negRight, negRight);
-    if(buttonA.isPressed()){
-        if(right < 400)
-        right = right + 20;
-        buttonA.waitForRelease();
-      }else if(buttonC.isPressed()){
-        if(right > 0)
-        right = right - 20;
-        buttonC.waitForRelease();
-      }else if(buttonB.isPressed()){
-        motors.setSpeeds(0,0);
-        break;
-      }
-
+    flag = setVal();
+    if(flag == true)
+      flag = false;
+      break;
   }
-  buttonB.waitForRelease();
+  dis = temp;
+  temp = 0;
+  menuVelocity();
+  while(1){
+    flag = setVal();
+    if(flag == true)
+      flag = false;
+      break;
+  }
+  vel = temp;
+  countDown();
+
+  display.clear();
+  display.gotoXY(1,0);
+  display.print("BACKWARD ");
+  display.gotoXY(0,2);
+  display.print("Vel: ");
+  display.gotoXY(0, 3);
+  display.print("Cm: ");
+
+  Function function = encBackward;
+  encoderTrack(encBackward, dis, vel);
+  delay(1000);
+  
 }
 
-//vuelta +
+//vuelta clockwise
 void spin(){
-  right = 000;
-  display.clear();
-  display.gotoXY(0,2);
-  display.print(" +       - ");
-  display.gotoXY(0,3);
-  display.print(" A       C ");
+  flag = false;
+  temp = 0;
+  dis = 0;
+  vel = 0;
+  menuDistance();
   while(1){
-    display.gotoXY(4,0);
-    display.print(right);
-    left = (right)*(-1);
-    motors.setSpeeds(right, left);
-    if(buttonA.isPressed()){
-        if(right < 400)
-        right = right + 20;
-        buttonA.waitForRelease();
-      }else if(buttonC.isPressed()){
-        if(right > 0)
-        right = right - 20;
-        buttonC.waitForRelease();
-      }else if(buttonB.isPressed()){
-        motors.setSpeeds(0,0);
-        break;
-      }
-
+    flag = setVal();
+    if(flag == true)
+      flag = false;
+      break;
   }
-  buttonB.waitForRelease();
+  dis = temp;
+  temp = 0;
+  menuVelocity();
+  while(1){
+    flag = setVal();
+    if(flag == true)
+      flag = false;
+      break;
+  }
+  vel = temp;
+  countDown();
+
+  display.clear();
+  display.gotoXY(1,0);
+  display.print("SPIN CLOCK ");
+  display.gotoXY(0,2);
+  display.print("Vel: ");
+  display.gotoXY(0, 3);
+  display.print("Cm: ");
+
+  Function function = encClockWise;
+  encoderTrack(encClockWise, dis, vel);
+  delay(1000);
 }
 
-//vuelta -
+//vuelta anticlockwise
 void spinAnti(){
-  right = 000;
-  int negRight;
-  display.clear();
-  display.gotoXY(0,2);
-  display.print(" +       - ");
-  display.gotoXY(0,3);
-  display.print(" A       C ");
+  flag = false;
+  temp = 0;
+  dis = 0;
+  vel = 0;
+  menuDistance();
   while(1){
-    display.gotoXY(4,0);
-    display.print(right);
-    left = right;
-    motors.setSpeeds(right*-1, left);
-    if(buttonA.isPressed()){
-        if(right < 400)
-        right = right + 20;
-        buttonA.waitForRelease();
-      }else if(buttonC.isPressed()){
-        if(right > 0)
-        right = right - 20;
-        buttonC.waitForRelease();
-      }else if(buttonB.isPressed()){
-        motors.setSpeeds(0,0);
-        break;
-      }
-
+    flag = setVal();
+    if(flag == true)
+      flag = false;
+      break;
   }
-  buttonB.waitForRelease();
+  dis = temp;
+  temp = 0;
+  menuVelocity();
+  while(1){
+    flag = setVal();
+    if(flag == true)
+      flag = false;
+      break;
+  }
+  vel = temp;
+  countDown();
+
+  display.clear();
+  display.gotoXY(1,0);
+  display.print("SPIN ANTI-");
+  display.gotoXY(1, 1);
+  display.print("CLOCK");
+  display.gotoXY(0,2);
+  display.print("Vel: ");
+  display.gotoXY(0, 3);
+  display.print("Cm: ");
+
+  Function function = encAntiClockWise;
+  encoderTrack(encAntiClockWise, dis, vel);
+  delay(1000);
 }
 
 void setup() {
   //Definir tamaño del display OLED
   display.setLayout11x4();
-  Serial.begin(9600);
+  //Serial.begin(9600);
 }
 
 void loop() {
@@ -258,6 +437,5 @@ void loop() {
     default:
       mainMenu();
       break;
-  }
-    
+  } 
 }
