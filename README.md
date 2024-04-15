@@ -1,7 +1,7 @@
 # Pololu 3pi+ Robot Library 🤖
 Welcome to the Pololu 3pi+ Robot Library repository! This repository contains everything you need to get started with programming and using the Pololu 3pi+ robot with Arduino IDE. The Pololu 3pi+ is a versatile programmable robot designed for educational and hobbyist purposes, featuring various sensors, motors, and a programmable microcontroller.
-![image](https://github.com/Ric4rd1/Pololu-3Pi-/assets/111295737/a0e622e8-d07a-4ce9-80b9-68657a4760a6)
 
+![image](https://github.com/Ric4rd1/Pololu-3Pi-/assets/111295737/a0e622e8-d07a-4ce9-80b9-68657a4760a6)
 ## Pololu3piPlus32U4 library 📚
 - &lt;Pololu3piPlus32U4.h>
 - https://pololu.github.io/pololu-3pi-plus-32u4-arduino-library/
