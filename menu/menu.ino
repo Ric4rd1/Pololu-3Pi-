@@ -12,33 +12,42 @@ Motors motors;
 Encoders encoders;
 
 //Variables
+//opcion seleccionada
 int optionSelect = -1;
+//número de opciones
 int nOptions = 4;
+//valores velocidad y distancia
 int temp, vel, dis = 0;
+//bandera
 bool flag = false;
-
+//funciones de los motores
 enum Function {encForward, encBackward, encClockWise, encAntiClockWise};
 
 //Funciones 
 
-//Botones A, C para ciclar menu, boton B para seleccionar 
+//Botones A, C para ciclar menu, boton B para seleccionar función
 void buttonPress(){
   while(1){
     //Boton A
     if(buttonA.isPressed()){
+      //restar 1 a la opción seleccionada
       optionSelect = (optionSelect - 1 + nOptions) % nOptions;
       Serial.print(optionSelect);
+      //esperar a soltar botón
       buttonA.waitForRelease();
       return;
     //Boton C
     }else if(buttonC.isPressed()){
+      //sumar 1 a la opción selecionada
       optionSelect = (optionSelect + 1) % nOptions;
       Serial.print(optionSelect);
+      //esperar a soltar botón
       buttonC.waitForRelease();
       return;
     //Boton B
     }else if(buttonB.isPressed()){
       buttonB.waitForRelease();
+      //seleccionar función
       switch(optionSelect){
         case 0:
           forward();
@@ -81,6 +90,7 @@ bool setVal(){
       }
 }
 
+//cuenta regresiva 3,2,1
 void countDown(){
   display.clear();
   display.gotoXY(5, 1);
@@ -94,43 +104,43 @@ void countDown(){
   delay(1000);
 }
 
-//Inicia los motores dependiendo de function, a la velocidad y distancia en los parametros
+//Inicia los motores dependiendo de function a la velocidad y distancia en los parametros
 void encoderTrack(Function function, int distance, int velocity){
   //Encoder Variables
-  float pos_left = 0;
+  float pos_left = 0;//almacenamos la posición de los encoders derecha e izquierda
   float pos_right = 0;
-  float pos_avg = 0;
-  float vel_left = 0;
+  float pos_avg = 0;//promedio
+  float vel_left = 0;//almacenamos la posición de los encoders derecha e izquierda
   float vel_right = 0;
   float vel_avg = 0;
-  float period = 0.05; //periodo de muestreo
-  double prev_time = 0;
+  float period = 0.05;//periodo de muestreo
+  double prev_time = 0;//almacena el tiempo anterior de la ejecución del ciclo.
   
   //Selecionar funcion
   switch(function){
     case encForward:
-      motors.setSpeeds(velocity, velocity);
+      motors.setSpeeds(velocity, velocity);//Izq y Der positivos
       break;
     case encBackward:
-      motors.setSpeeds(-1*velocity, -1*velocity);
+      motors.setSpeeds(-1*velocity, -1*velocity);//Izq y Der negativos
       break;
     case encClockWise:
-      motors.setSpeeds(velocity, -1*velocity);
+      motors.setSpeeds(velocity, -1*velocity);//Izq positivo, Der negativo
       break;
     case encAntiClockWise:
-      motors.setSpeeds(-1*velocity, velocity);
+      motors.setSpeeds(-1*velocity, velocity);//Izq negativo, Der positivo
       break;
     default:
       break;
   }
 
   while(1){
+    //Ejecutar nuestra rutina cada periodo
     if(millis()-prev_time >= period*1000){
     //Actualizamos el tiempo anterior del ciclo
     prev_time = millis();
 
-    //Ejecutamos nuestra rutina cada 50ms
-    pos_left = float(encoders.getCountsAndResetLeft());
+    pos_left = float(encoders.getCountsAndResetLeft());//obtener pulsos encoder y reiniciar cuenta
     pos_left = pos_left * (1.0/12.0); // pulsos encoder a revMotor
     pos_left = pos_left * (1.0/29.86); //revMotor a revRueda
     pos_left = pos_left * ((3.2*3.1416)/1.0); //revRueda a cm
@@ -139,7 +149,7 @@ void encoderTrack(Function function, int distance, int velocity){
     vel_left = abs(vel_left);
     pos_left = abs(pos_left);
 
-    pos_right = float(encoders.getCountsAndResetRight());
+    pos_right = float(encoders.getCountsAndResetRight());//obtener pulsos encoder y reiniciar cuenta
     pos_right = pos_right * (1.0/12.0); // pulsos encoder a revMotor
     pos_right = pos_right * (1.0/29.86); //revMotor a revRueda
     pos_right = pos_right * ((3.2*3.1416)/1.0); //revRueda a cm
@@ -160,6 +170,7 @@ void encoderTrack(Function function, int distance, int velocity){
     display.gotoXY(4,3);
     display.print(pos_avg);
 
+    //esperar a que pos llegue a distance
     if(pos_avg >= distance || buttonB.isPressed()){
       motors.setSpeeds(0,0);
       buttonB.waitForRelease();
@@ -260,6 +271,7 @@ void forward(){
   temp = 0;
   dis = 0;
   vel = 0;
+  //preguntar distancia
   menuDistance();
   while(1){
     flag = setVal();
@@ -269,6 +281,7 @@ void forward(){
   }
   dis = temp;
   temp = 0;
+  //preguntar velocidad
   menuVelocity();
   while(1){
     flag = setVal();
@@ -287,7 +300,9 @@ void forward(){
   display.gotoXY(0, 3);
   display.print("Cm: ");
   
-  Function function = encForward;  
+  //Definir función
+  Function function = encForward;
+  //Activar Motores y empezar seguimiento con encoders   
   encoderTrack(encForward, dis, vel);
   delay(1000);
   
@@ -299,6 +314,7 @@ void backward(){
   temp = 0;
   dis = 0;
   vel = 0;
+  //preguntar distancia
   menuDistance();
   while(1){
     flag = setVal();
@@ -308,6 +324,7 @@ void backward(){
   }
   dis = temp;
   temp = 0;
+  //preguntar velocidad
   menuVelocity();
   while(1){
     flag = setVal();
@@ -326,7 +343,9 @@ void backward(){
   display.gotoXY(0, 3);
   display.print("Cm: ");
 
+  //Definir función
   Function function = encBackward;
+  //Activar Motores y empezar seguimiento con encoders
   encoderTrack(encBackward, dis, vel);
   delay(1000);
   
@@ -338,6 +357,7 @@ void spin(){
   temp = 0;
   dis = 0;
   vel = 0;
+  //preguntar distancia
   menuDistance();
   while(1){
     flag = setVal();
@@ -347,6 +367,7 @@ void spin(){
   }
   dis = temp;
   temp = 0;
+  //preguntar velocidad
   menuVelocity();
   while(1){
     flag = setVal();
@@ -365,7 +386,9 @@ void spin(){
   display.gotoXY(0, 3);
   display.print("Cm: ");
 
+  //definir función
   Function function = encClockWise;
+  //Activar Motores y empezar seguimiento con encoders
   encoderTrack(encClockWise, dis, vel);
   delay(1000);
 }
@@ -376,6 +399,7 @@ void spinAnti(){
   temp = 0;
   dis = 0;
   vel = 0;
+  //preguntar distancia
   menuDistance();
   while(1){
     flag = setVal();
@@ -385,6 +409,7 @@ void spinAnti(){
   }
   dis = temp;
   temp = 0;
+  //preguntar velocidad
   menuVelocity();
   while(1){
     flag = setVal();
@@ -406,6 +431,7 @@ void spinAnti(){
   display.print("Cm: ");
 
   Function function = encAntiClockWise;
+  //Activar Motores y empezar seguimiento con encoders
   encoderTrack(encAntiClockWise, dis, vel);
   delay(1000);
 }
