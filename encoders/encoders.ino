@@ -22,15 +22,16 @@ Pos = revMotor * (1 revRueda/29.86 revMotor)
 Pos = revRueda * ((diametroRueda3.2 * pi)cm/1 revRueda)
 */
 
-float pos_left = 0;
+float pos_left = 0;//almacenamos la posición de los encoders derecha e izquierda
 float pos_right = 0;
-float vel_left = 0;
+float vel_left = 0;//almacenamos la velocidad de las  ruedas derecha e izquierda
+
 float vel_right = 0;
-float period = 0.05; //periodo de muestreo
-double prev_time = 0;
+float period = 0.05; // define el periodo de muestreo
+double prev_time = 0; //almacena el tiempo anterior de la ejecución del ciclo.
 
 void setup() {
-  display.setLayout11x4();
+  display.setLayout11x4();//inicializamos la pantalla para que se muestre la información
 
 }
 
@@ -56,13 +57,16 @@ void loop() {
     vel_right = pos_right / period;
   }
 
-  display.noAutoDisplay();
-  display.clear();
-  display.gotoXY(0,0);
-  display.print("LEFT: ");
-  display.print(vel_left);
-  display.gotoXY(0, 2);
-  display.print("RIGHT: ");
-  display.print(vel_right);
-  display.display();  
+  display.noAutoDisplay(); //despues de imprimir el texto la pantalla no se actualizara 
+                          //hasta que reciba una instrucción manualmente.
+  display.clear(); //limpia el contenido de la pantalla para poder agregar nueva información
+  display.gotoXY(0,0); //mueve el cursor de texto en la posición(0,0)
+  display.print("LEFT: ");//este texto nos srive para identificar la información
+                          //de la velocidad izquierda
+
+  display.print(vel_left); //imprime el valor de la variable 
+  display.gotoXY(0, 2); //mueve el cursor a la posición (0,2)
+  display.print("RIGHT: ");//indica que la información se refiere a la velocidad derecha
+  display.print(vel_right); //imprime valor de la variable
+  display.display(); //muestra los cambios 
 }
