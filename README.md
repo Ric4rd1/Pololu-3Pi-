@@ -26,7 +26,7 @@ To get started with using the Pololu 3pi+ Robot Library, follow these steps:
 
 ### **Usage**
 ```C++
-include &lt;Pololu3piPlus32U4.h>
+include <Pololu3piPlus32U4.h>
 using namespace Pololu3piPlus32U4;
  
 OLED display;
