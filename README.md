@@ -25,8 +25,8 @@ To get started with using the Pololu 3pi+ Robot Library, follow these steps:
 5. If you see a prompt asking to install missing dependencies, click "Install all".
 
 ### **Usage**
+```C++
 include &lt;Pololu3piPlus32U4.h>
- 
 using namespace Pololu3piPlus32U4;
  
 OLED display;
@@ -38,4 +38,5 @@ LineSensors lineSensors;
 BumpSensors bumpSensors;
 Motors motors;
 Encoders encoders;
+```
 
