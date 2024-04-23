@@ -90,8 +90,15 @@ float pulse2DegRight(){
 }
 
 void forward(int i){
+  bumpSensors.read();
   while(1){
     if(millis()-prev_time >= period*1000){
+      
+      bumpSensors.read();
+      if (bumpSensors.rightChanged()||bumpSensors.leftChanged()){
+        motors.setSpeeds(0,0);
+        break;
+      }
       //Obtenemos posicion en cm
       pos_left = pulse2CmLeft();
       pos_right = pulse2CmRight();
@@ -125,8 +132,16 @@ void forward(int i){
 }
 
 void rotate(int i){
+  bumpSensors.read();
   while(1){
     if(millis()-prev_time >= period*1000){
+      
+      bumpSensors.read();
+      if (bumpSensors.rightChanged()||bumpSensors.leftChanged()){
+        motors.setSpeeds(0,0);
+        break;
+      }
+        
       //Obtenemos posicion en cm
       pos_left = pulse2DegLeft();
       pos_right = pulse2DegRight();
@@ -686,6 +701,7 @@ void setup() {
   //Definir tamaño del display OLED
   display.setLayout21x8();
   Serial.begin(9600);
+  bumpSensors.calibrate();
 }
 void loop() {
   switch (menuSelect) {
