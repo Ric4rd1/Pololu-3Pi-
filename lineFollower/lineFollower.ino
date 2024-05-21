@@ -145,19 +145,19 @@ void setup() {
   // Count down
   display.clear();
   display.print(F("3..."));
-  buzzer.play("L4 V7 a.R");
+  buzzer.play("L4 a.R");
   while(buzzer.isPlaying());
   display.clear();
   display.print(F("2..."));
-  buzzer.play("L4 V7 a.R");
+  buzzer.play("L4 a.R");
   while(buzzer.isPlaying());
   display.clear();
   display.print(F("1..."));
-  buzzer.play("L4 V7 a.R");
+  buzzer.play("L4 a.R");
   while(buzzer.isPlaying());
   display.clear();
   display.print(F("GO!!!"));
-  buzzer.play("L4 V8 >a.");
+  buzzer.play("L4 >a.");
   while(buzzer.isPlaying());
   display.clear();
 }
@@ -170,11 +170,32 @@ void loop() {
     position = lineSensors.readLineWhite(lineSensorValues);
   }
 
-  // Calculate eror 
-  error = position - 2000;
+  // Calculate error
+  // Perfect calibration
+  //error = position - 2000; 
+
+  // Real calibration
+  error = position - 1850;
 
   // Modify parameters depending if its a straight or curved line
   // Straight
+
+  if (abs(error) < 350){
+    proportional = 20;
+    //pista 2
+    baseSpeed = 260;
+    //pista 1
+    //baseSpeed = 320;
+    derivative = 256; 
+    maxSpeed = 380;
+  // Curved
+  }else{
+    proportional = 32;
+    baseSpeed = 180;
+    derivative = 400;
+    maxSpeed = 230;
+  }
+  /*
   if (abs(error) < 400){
     proportional = 20;
     baseSpeed = 260;
@@ -188,6 +209,7 @@ void loop() {
     maxSpeed = 250;
     count = 0;
   }
+  */
 
   // PD control
   int16_t speedDifference = error * (int32_t)proportional / 256  + (error - lastError) * (int32_t)derivative / 256;
