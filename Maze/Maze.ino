@@ -1,5 +1,4 @@
 #include <Pololu3piPlus32U4.h>
-#include <PololuMenu.h>
 using namespace Pololu3piPlus32U4;
 
 OLED display;
@@ -14,21 +13,12 @@ Encoders encoders;
 
 #define NUM_SENSORS 5                        // Number of infrarred sensores
 unsigned int lineSensorValues[NUM_SENSORS];  // Array used to store line sensor data
-PololuMenu<OLED> menu;                       //menu object for oled display
 
-/*########## GLOBAL VARIABLES ##########*/
+unsigned int calibrationSpeed = 80; // motor speeds for calibration
+unsigned int sensitivityBlack = 300;
+unsigned int sensitivityWhite = 700;
 
-uint16_t calibrationSpeed = 80; // motor speeds for calibration
-uint8_t sensitivity = 800; // Threshold for identifing line 
-                           // (sensor < sensitivity = 1, sensor > sensitivity = 0)
-
-// Robot constants
-const float rad = 1.6;  // Wheel Radius
-const float len = 9.0;  // Distance Between wheels
-
-int16_t error = 0;
-float angLeft, angRight;
-
+bool colorLine = 0; //0 = black, 1 = white
 // Sensor values 
 bool left = 0;
 bool mid = 0;
@@ -38,7 +28,7 @@ bool leftLast = 0;
 bool midLast = 0;
 bool rightLast = 0;
 
-bool threeSensors[3] = {0,0,0};
+bool finish = 0;
 
 void calibrateSensors() {
   display.clear();
@@ -59,7 +49,13 @@ void calibrateSensors() {
 }
 
 void showReadings(){
-  uint16_t prediction = lineSensors.readLineBlack(lineSensorValues);
+  uint16_t prediction;
+  if (colorLine == 0){
+    prediction = lineSensors.readLineBlack(lineSensorValues);
+  }else if(colorLine == 1){
+    prediction = lineSensors.readLineWhite(lineSensorValues);
+  }
+  
   display.noAutoDisplay();
   display.clear();
   display.print(lineSensorValues[0]); //Sensor DN1
@@ -78,50 +74,69 @@ void showReadings(){
   display.display();
 }
 
-void showSensors(){
-  
-}
-
 void readSensors(){
-  lineSensors.readLineBlack(lineSensorValues);
-  left = (lineSensorValues[0] < sensitivity) ? 0 : 1;
-  mid = (lineSensorValues[2] < sensitivity) ? 0 : 1;
-  right = (lineSensorValues[4] < sensitivity) ? 0 : 1;
-  threeSensors[0] = left;
-  threeSensors[1] = mid;
-  threeSensors[2] = right;
+  if(colorLine == 0){
+    lineSensors.readLineBlack(lineSensorValues);
+    left = (lineSensorValues[0] < sensitivityBlack) ? 0 : 1;
+    mid = (lineSensorValues[2] < sensitivityBlack) ? 0 : 1;
+    right = (lineSensorValues[4] < sensitivityBlack) ? 0 : 1;
+  } else if (colorLine == 1){
+    lineSensors.readLineWhite(lineSensorValues);
+    left = (lineSensorValues[0] < sensitivityWhite) ? 1 : 0;
+    mid = (lineSensorValues[2] < sensitivityWhite) ? 1 : 0;
+    right = (lineSensorValues[4] < sensitivityWhite) ? 1 : 0;
+  }
 }
 
-void getAngles() {
-  angLeft = float(encoders.getCountsAndResetLeft());
-  angLeft = angLeft * (1.0 / 12.0);   // Encoder pulses to motor revolutions
-  angLeft = angLeft * (1.0 / 29.86);  // Motor revolutions to wheel revolutions
-  angLeft = angLeft * (360.0 / 1.0);  // Wheel revolutions to degrees
-
-  angRight = float(encoders.getCountsAndResetRight());
-  angRight = angRight * (1.0 / 12.0);   // Encoder pulses to motor revolutions
-  angRight = angRight * (1.0 / 29.86);  // Motor revolutions to wheel revolutions
-  angRight = angRight * (360.0 / 1.0);  // Wheel revolutions to degrees
+void showSensors(){
+  display.clear();
+  display.noAutoDisplay();
+  display.gotoXY(0,0);
+  display.print("left    mid    right");
+  display.gotoXY(1,1);
+  display.print(left);
+  display.gotoXY(9,1);
+  display.print(mid);
+  display.gotoXY(17,1);
+  display.print(right);
+  display.display();
 }
 
 void followLine() {
   int16_t lastError = 0;
   // proportional = 20 , derivative = 256
-  uint16_t proportional = 20;  // coefficient proportional (error in the present) 256 = 1
-  uint16_t derivative = 128;   // coefficient derivative (rate of change) 256 = 1
+  uint16_t proportional = 10;  // coefficient proportional (error in the present) 256 = 1
+  uint16_t derivative = 64;   // coefficient derivative (rate of change) 256 = 1
   uint16_t maxSpeed = 60;
-  int16_t minSpeed = 10;
+  int16_t minSpeed = 40;
   uint16_t baseSpeed = 45;
   uint16_t position;
-  error = 0;
+  int error = 0;
   readSensors();
   leftLast = left;
   midLast = mid;
   rightLast = right;
   while (1) {
-    // Read line sensors
-    position = lineSensors.readLineBlack(lineSensorValues);
+    leftLast = left;
+    midLast = mid;
+    rightLast = right;
 
+    readSensors();
+
+    if((left != leftLast) || (right != rightLast) || (mid != midLast)){
+      motors.setSpeeds(30, 30);
+      delay(70);
+      motors.setSpeeds(0, 0);
+      break;
+    }
+    
+    // Read line sensors
+    if (colorLine == 0){
+      position = lineSensors.readLineBlack(lineSensorValues);
+    } else if (colorLine == 1){
+      position = lineSensors.readLineWhite(lineSensorValues);
+    }
+    
     // Calculate error
     // Perfect calibration
     error = position - 2000;
@@ -141,73 +156,28 @@ void followLine() {
     rightSpeed = constrain(rightSpeed, minSpeed, (int16_t)maxSpeed);
 
     // Set speeds
-    motors.setSpeeds(leftSpeed, rightSpeed);
-
-    leftLast = left;
-    midLast = mid;
-    rightLast = right;
-
-    readSensors();
-
-    if((left != leftLast) || (right != rightLast) || (mid != midLast)){
-      motors.setSpeeds(30, 30);
-      delay(70);
-      motors.setSpeeds(0, 0);
-      break;
-    }
+    motors.setSpeeds(leftSpeed, rightSpeed);  
 
   }  // While
 }
 
-void rotate(float angRef) {
-  float ang = 0;
-  int16_t speed = 60;
-
-  error = 0;
-  angLeft = 0;
-  angRight = 0;
-
-  while (1) {
-    getAngles();  // Update angle readings from encoders
-
-    // Calculate angle
-    ang = ang + (rad * ((angRight - angLeft) / len));
-    error = angRef - ang;
-    /*
-    display.clear();
-    display.gotoXY(0,0);
-    display.print("error: ");
-    display.print(error);
-    display.gotoXY(0, 1);
-    display.print("ang: ");
-    display.print(ang);
-    */
-    if (error > 5) {
-      motors.setSpeeds(-speed, speed);
-    } else if (error < -1) {
-      motors.setSpeeds(speed, -speed);
-    } else {
-      motors.setSpeeds(0, 0);
-      break;
-    }
-
-  }    //While
-}
-
 void takeDecition() {
-  // Update sensor values
-  readSensors();
   switch (left << 2 | mid << 1 | right) {
     case 0:  // Dead End
       //motors.setSpeeds(int16_t leftSpeed, int16_t rightSpeed)
       display.clear();
       display.print("Dead End");
-      rotate(180);
+      motors.setSpeeds(-60, 60);
+      delay(685);
+      motors.setSpeeds(0, 0);
+      
       break;
     case 1:  // Right turn only
       display.clear();
       display.print("Right turn only");
-      rotate(180);
+      motors.setSpeeds(60, -60);
+      delay(345);
+      motors.setSpeeds(0, 0);
       break;
     case 2:  // Straight
       display.clear();
@@ -220,22 +190,41 @@ void takeDecition() {
     case 4:  // Left turn only
       display.clear();
       display.print("Left turn only");
-      rotate(90);
+      motors.setSpeeds(-60, 60);
+      delay(345);
+      motors.setSpeeds(0, 0);
       break;
     case 5:  // Left or Right (T)
       display.clear();
       display.print("Left of Right (T)");
-      rotate(90);
+      motors.setSpeeds(-60, 60);
+      delay(345);
+      motors.setSpeeds(0, 0);
       break;
     case 6:  // Straight or Left
       display.clear();
       display.print("Straight or Left");
-      rotate(90);
+      motors.setSpeeds(-60, 60);
+      delay(345);
+      motors.setSpeeds(0, 0);
       break;
     case 7:  // Four Way
       display.clear();
       display.print("Four Way");
-      rotate(90);
+      
+      leftLast = left;
+      midLast = mid;
+      rightLast = right;
+      motors.setSpeeds(-60, 60);
+      delay(45);
+      readSensors();
+      if((left == leftLast) && (right == rightLast) && (mid == midLast)){
+        motors.setSpeeds(0, 0);
+        finish = 1;
+        break;
+      }
+      delay(300);
+      motors.setSpeeds(0, 0);
       break;
   }
 }
@@ -244,6 +233,7 @@ void setup() {
   // Set display Layout
   display.setLayout21x8();
 
+  display.clear();
   display.print("PRESS B TO CALIBRATE");
 
   // Wait for B button press
@@ -252,15 +242,46 @@ void setup() {
   display.print("CALIBRATING...");
   calibrateSensors();
   display.clear();
-  while (!buttonB.getSingleDebouncedPress()){
-    showReadings();
-  }
+
+  // 345 90grados
+  // 685 180grados
+
+  display.print("READY");
+  while (!buttonB.getSingleDebouncedPress());
+
+  
 }
 
 void loop() {
+  //readSensors();
+  //showSensors();
+  
+
   followLine();
-  delay(10);
+  motors.setSpeeds(40, 40);
+  if (colorLine == 0){
+    delay(25);
+    readSensors();
+    delay(150);
+  }else if (colorLine == 1){
+    delay(85);
+    readSensors();
+    delay(90);
+  }
+  // Total delay 175
+  // white track 85, 90
+  // Black track 25, 150
+  motors.setSpeeds(0, 0);
   takeDecition();
-  delay(10);
+
+  if (finish == 1){
+    display.clear();
+    display.print("     FINISH !!!");
+    display.gotoXY(0, 3);
+    display.print("  Press B to Restart");
+    finish = 0;
+    while (!buttonB.getSingleDebouncedPress());
+    setup();
+  }
 
 }
