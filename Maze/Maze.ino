@@ -11,14 +11,15 @@ BumpSensors bumpSensors;
 Motors motors;
 Encoders encoders;
 
-#define NUM_SENSORS 5                        // Number of infrarred sensores
+#define NUM_SENSORS 5                        // Number of infrarred sensors
 unsigned int lineSensorValues[NUM_SENSORS];  // Array used to store line sensor data
 
-unsigned int calibrationSpeed = 80; // motor speeds for calibration
-unsigned int sensitivityBlack = 300;
-unsigned int sensitivityWhite = 700;
+unsigned int calibrationSpeed = 80;  // Motor speed for calibration
+unsigned int sensitivityBlack = 300; // Threshold for detecting Black lines
+unsigned int sensitivityWhite = 700; // Threshold for detecting White lines
 
 bool colorLine = 0; //0 = black, 1 = white
+
 // Sensor values 
 bool left = 0;
 bool mid = 0;
@@ -28,7 +29,7 @@ bool leftLast = 0;
 bool midLast = 0;
 bool rightLast = 0;
 
-bool finish = 0;
+bool finish = 0; // Finish flag
 
 void calibrateSensors() {
   display.clear();
@@ -104,7 +105,6 @@ void showSensors(){
 
 void followLine() {
   int16_t lastError = 0;
-  // proportional = 20 , derivative = 256
   uint16_t proportional = 10;  // coefficient proportional (error in the present) 256 = 1
   uint16_t derivative = 64;   // coefficient derivative (rate of change) 256 = 1
   uint16_t maxSpeed = 60;
@@ -112,17 +112,22 @@ void followLine() {
   uint16_t baseSpeed = 45;
   uint16_t position;
   int error = 0;
-  readSensors();
+
+  readSensors(); // Read sensors before moving
   leftLast = left;
   midLast = mid;
   rightLast = right;
+
+  // Stay in loop while readings in sensors don't change
   while (1) {
+    // Asign last recorded values
     leftLast = left;
     midLast = mid;
     rightLast = right;
 
-    readSensors();
+    readSensors(); // Read sensors
 
+    // If readings have changed from previous, move forward 1cm and break
     if((left != leftLast) || (right != rightLast) || (mid != midLast)){
       motors.setSpeeds(30, 30);
       delay(70);
@@ -161,6 +166,7 @@ void followLine() {
   }  // While
 }
 
+// Take Decition based on sensor recorded values
 void takeDecition() {
   switch (left << 2 | mid << 1 | right) {
     case 0:  // Dead End
@@ -212,6 +218,7 @@ void takeDecition() {
       display.clear();
       display.print("Four Way");
       
+      // Check if robot is at the end of maze
       leftLast = left;
       midLast = mid;
       rightLast = right;
@@ -253,10 +260,6 @@ void setup() {
 }
 
 void loop() {
-  //readSensors();
-  //showSensors();
-  
-
   followLine();
   motors.setSpeeds(40, 40);
   if (colorLine == 0){
