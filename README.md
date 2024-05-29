@@ -40,3 +40,22 @@ Motors motors;
 Encoders encoders;
 ```
 
+## Contents 🎮
+- `Menu`.ino
+	- Basic functions (Forward, Backward, Spin-Clockwise, Spin Anti-Clockwise)
+	- Set speed motors (0-400)
+-  `Menu2`.ino
+	- Program routines (0 - 10 instructions, 1 struction is moving forward and rotating)
+	- Use of proportional control (KRotation, KDistance constants)
+- `LineFollower`.ino
+	- Follow a race track (White line or Black line)
+	- Use of proportional derivative control (PD Control)
+- `Maze`.ino
+	- Solve a maze with right hand or left hand algorithm
+	- Data processing for route optimization after first solve
+- `encoders`.ino
+	- Basic encoder usage
+	- Encoder pulses -> Motor revolutions -> Wheel revolutions -> cm
+	- Calculation of velocity of motors
+- `OLEDMotors`.ino
+	- Basic usage of motors and OLED display
