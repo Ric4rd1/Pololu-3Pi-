@@ -89,7 +89,7 @@ void replace(bool first){
       }
       // Case: SUS
       else if (before == 'S' && after == 'S') {
-          simplifiedDecitions[j++] = 'S';
+          simplifiedDecitions[j++] = 'U';
       }
       // Case: LUR
       else if (before == 'L' && after == 'R') {
@@ -132,7 +132,7 @@ void replaceExeption(){
     }
     // Case: SUS
     else if (before == 'S' && after == 'S') {
-        simplifiedDecitions[j-1] = 'S';
+        simplifiedDecitions[j-1] = 'U';
     }
     // Case: LUR
     else if (before == 'L' && after == 'R') {
@@ -160,7 +160,7 @@ bool simplify() {
     // Iterate over the decitions array
     while (decitions[i] != 'U' && decitions[i] != 'F') {
 
-        if (simplifiedDecitions[j-1] == 'U') {
+        if ((simplifiedDecitions[j-1] == 'U')&&((j-1) != 0)) {
             exeption = true;
             break;
         }
@@ -794,6 +794,13 @@ void setup() {
   display.print("*B TO START");
   while (!buttonB.getSingleDebouncedPress());
   delay(2000);
+
+  if ((mode == 1)&&(simplifiedDecitions[0] == 'U')){
+      motors.setSpeeds(-60, 60);
+      delay(685);
+      motors.setSpeeds(0, 0);
+      simplifiedDecitionIndex++;
+    }
 }
 
 void loop() {
